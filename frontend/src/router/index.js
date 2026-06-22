@@ -41,6 +41,12 @@ const routes = [
         name: 'ApiTest',
         component: () => import('../views/ApiTest.vue'),
         meta: { title: 'API测试' }
+      },
+      {
+        path: 'ai-question',
+        name: 'AiQuestion',
+        component: () => import('../views/AiQuestion.vue'),
+        meta: { title: 'AI智能出题' }
       }
     ]
   }

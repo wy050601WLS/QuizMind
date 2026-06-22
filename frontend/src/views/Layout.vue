@@ -37,6 +37,10 @@
             <el-icon><Connection /></el-icon>
             <span>API测试</span>
           </el-menu-item>
+          <el-menu-item index="/ai-question">
+            <el-icon><MagicStick /></el-icon>
+            <span>AI智能出题</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-container>
@@ -80,7 +84,8 @@ import {
   Warning,
   DataAnalysis,
   ArrowDown,
-  Connection
+  Connection,
+  MagicStick
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
