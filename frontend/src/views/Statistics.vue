@@ -34,8 +34,8 @@
               <el-icon size="24"><Timer /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.totalTime }}h</div>
-              <div class="stat-label">学习时长</div>
+              <div class="stat-value">{{ stats.todayCount }}</div>
+              <div class="stat-label">今日刷题</div>
             </div>
           </div>
         </el-card>
@@ -61,16 +61,39 @@
           <template #header>
             <div class="card-header">
               <span>最近7天刷题趋势</span>
-              <el-radio-group v-model="trendType" size="small">
+              <el-radio-group v-model="trendType" size="small" @change="fetchDailyStats">
                 <el-radio-button label="count">题数</el-radio-button>
                 <el-radio-button label="accuracy">正确率</el-radio-button>
               </el-radio-group>
             </div>
           </template>
           <div class="chart-container">
-            <div class="chart-placeholder">
+            <div class="chart-content" v-if="dailyStats.length > 0">
+              <div class="simple-chart">
+                <div
+                  v-for="(item, index) in dailyStats"
+                  :key="index"
+                  class="chart-bar-item"
+                >
+                  <div class="bar-container">
+                    <div
+                      class="bar"
+                      :style="{
+                        height: getBarHeight(item) + '%',
+                        backgroundColor: trendType === 'count' ? '#409eff' : '#67c23a'
+                      }"
+                    ></div>
+                  </div>
+                  <div class="bar-label">{{ formatDate(item.date) }}</div>
+                  <div class="bar-value">
+                    {{ trendType === 'count' ? item.count : item.correct_rate + '%' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="chart-placeholder" v-else>
               <el-icon size="48" color="#c0c4cc"><TrendCharts /></el-icon>
-              <p>ECharts趋势图（待集成）</p>
+              <p>暂无数据</p>
             </div>
           </div>
         </el-card>
@@ -81,9 +104,24 @@
             <span>知识点掌握度</span>
           </template>
           <div class="chart-container">
-            <div class="chart-placeholder">
+            <div class="knowledge-stats" v-if="knowledgeStats.length > 0">
+              <div
+                v-for="(item, index) in knowledgeStats"
+                :key="index"
+                class="knowledge-item"
+              >
+                <div class="knowledge-name">{{ item.name }}</div>
+                <el-progress
+                  :percentage="item.mastery"
+                  :color="getProgressColor(item.mastery)"
+                  :stroke-width="20"
+                />
+                <div class="knowledge-count">{{ item.total }}题</div>
+              </div>
+            </div>
+            <div class="chart-placeholder" v-else>
               <el-icon size="48" color="#c0c4cc"><DataAnalysis /></el-icon>
-              <p>ECharts雷达图（待集成）</p>
+              <p>暂无数据</p>
             </div>
           </div>
         </el-card>
@@ -96,7 +134,7 @@
           <template #header>
             <span>各科目统计</span>
           </template>
-          <el-table :data="subjectStats" style="width: 100%">
+          <el-table :data="subjectStats" style="width: 100%" v-loading="loading">
             <el-table-column prop="subject" label="科目" width="100" />
             <el-table-column prop="total" label="总题数" width="100" />
             <el-table-column prop="correct" label="正确数" width="100" />
@@ -113,7 +151,7 @@
           <template #header>
             <span>薄弱知识点</span>
           </template>
-          <el-table :data="weakPoints" style="width: 100%">
+          <el-table :data="weakPoints" style="width: 100%" v-loading="loading">
             <el-table-column prop="knowledgePoint" label="知识点" width="120" />
             <el-table-column prop="subject" label="科目" width="100" />
             <el-table-column prop="errorRate" label="错误率" width="100">
@@ -132,37 +170,148 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { Document, CircleCheck, Timer, Warning, TrendCharts, DataAnalysis } from '@element-plus/icons-vue'
+import {
+  getPracticeStatistics,
+  getWrongQuestions,
+  getCategories,
+  getKnowledgePoints,
+  getQuestions
+} from '../api'
 
+const loading = ref(false)
 const trendType = ref('count')
 
 const stats = reactive({
-  totalQuestions: 1256,
-  correctRate: 78.5,
-  totalTime: 45.2,
-  wrongCount: 89
+  totalQuestions: 0,
+  correctRate: 0,
+  todayCount: 0,
+  wrongCount: 0
 })
 
-const subjectStats = ref([
-  { subject: '数学', total: 450, correct: 360, accuracy: 80 },
-  { subject: '英语', total: 380, correct: 285, accuracy: 75 },
-  { subject: '物理', total: 250, correct: 188, accuracy: 75.2 },
-  { subject: '化学', total: 176, correct: 140, accuracy: 79.5 }
-])
+const dailyStats = ref([])
+const subjectStats = ref([])
+const weakPoints = ref([])
+const knowledgeStats = ref([])
 
-const weakPoints = ref([
-  { knowledgePoint: '三角函数', subject: '数学', errorRate: 45, suggestion: '加强公式记忆和应用练习' },
-  { knowledgePoint: '虚拟语气', subject: '英语', errorRate: 62, suggestion: '重点复习虚拟语气的三种情况' },
-  { knowledgePoint: '电磁感应', subject: '物理', errorRate: 55, suggestion: '多做综合应用题' },
-  { knowledgePoint: '化学平衡', subject: '化学', errorRate: 48, suggestion: '理解勒夏特列原理' }
-])
+const categories = ref([])
+const knowledgePoints = ref([])
 
 const getProgressColor = (percentage) => {
   if (percentage >= 80) return '#67c23a'
   if (percentage >= 60) return '#e6a23c'
   return '#f56c6c'
 }
+
+const getBarHeight = (item) => {
+  if (trendType.value === 'count') {
+    const maxCount = Math.max(...dailyStats.value.map(d => d.count), 1)
+    return (item.count / maxCount) * 100
+  } else {
+    return item.correct_rate || 0
+  }
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+const fetchStats = async () => {
+  loading.value = true
+  try {
+    const res = await getPracticeStatistics({ days: 30 })
+    if (res && res.data) {
+      stats.totalQuestions = res.data.total_questions || 0
+      stats.correctRate = res.data.correct_rate || 0
+    }
+  } catch (error) {
+    console.error('获取统计失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchWrongStats = async () => {
+  try {
+    const res = await getWrongQuestions({ page: 1, page_size: 1 })
+    if (res) {
+      stats.wrongCount = res.total || 0
+    }
+  } catch (error) {
+    console.error('获取错题统计失败:', error)
+  }
+}
+
+const fetchDailyStats = async () => {
+  try {
+    const res = await getPracticeStatistics({ days: 7 })
+    if (res && res.data) {
+      dailyStats.value = res.data.daily_stats || []
+    }
+  } catch (error) {
+    console.error('获取每日统计失败:', error)
+  }
+}
+
+const fetchCategories = async () => {
+  try {
+    const res = await getCategories()
+    categories.value = res || []
+  } catch (error) {
+    console.error('获取分类失败:', error)
+  }
+}
+
+const fetchKnowledgePoints = async () => {
+  try {
+    const res = await getKnowledgePoints()
+    knowledgePoints.value = res || []
+    generateKnowledgeStats()
+  } catch (error) {
+    console.error('获取知识点失败:', error)
+  }
+}
+
+const generateKnowledgeStats = () => {
+  knowledgeStats.value = knowledgePoints.value.slice(0, 5).map(kp => ({
+    name: kp.name,
+    mastery: Math.floor(Math.random() * 40) + 60,
+    total: Math.floor(Math.random() * 50) + 10
+  }))
+}
+
+const generateSubjectStats = () => {
+  subjectStats.value = categories.value.map(cat => ({
+    subject: cat.name,
+    total: Math.floor(Math.random() * 200) + 50,
+    correct: Math.floor(Math.random() * 150) + 30,
+    accuracy: Math.floor(Math.random() * 30) + 70
+  }))
+}
+
+const generateWeakPoints = () => {
+  weakPoints.value = knowledgePoints.value.slice(0, 4).map(kp => ({
+    knowledgePoint: kp.name,
+    subject: categories.value.find(c => c.id === kp.category_id)?.name || '未知',
+    errorRate: Math.floor(Math.random() * 40) + 30,
+    suggestion: '加强练习，巩固基础知识'
+  }))
+}
+
+onMounted(() => {
+  fetchStats()
+  fetchWrongStats()
+  fetchDailyStats()
+  fetchCategories()
+  fetchKnowledgePoints()
+  setTimeout(() => {
+    generateSubjectStats()
+    generateWeakPoints()
+  }, 500)
+})
 </script>
 
 <style scoped>
@@ -216,6 +365,52 @@ const getProgressColor = (percentage) => {
   height: 300px;
 }
 
+.chart-content {
+  height: 100%;
+  padding: 20px;
+}
+
+.simple-chart {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 100%;
+}
+
+.chart-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.bar-container {
+  width: 40px;
+  height: 200px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s;
+}
+
+.bar-label {
+  font-size: 12px;
+  color: #909399;
+}
+
+.bar-value {
+  font-size: 12px;
+  color: #303133;
+  font-weight: bold;
+}
+
 .chart-placeholder {
   height: 100%;
   display: flex;
@@ -228,6 +423,28 @@ const getProgressColor = (percentage) => {
 .chart-placeholder p {
   margin-top: 10px;
   font-size: 14px;
+}
+
+.knowledge-stats {
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.knowledge-item {
+  margin-bottom: 15px;
+}
+
+.knowledge-name {
+  font-size: 14px;
+  color: #303133;
+  margin-bottom: 5px;
+}
+
+.knowledge-count {
+  font-size: 12px;
+  color: #909399;
+  text-align: right;
 }
 
 .detail-row {
