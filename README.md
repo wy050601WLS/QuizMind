@@ -12,7 +12,7 @@
 ## 项目结构
 
 ```
-个人项目/
+QuizMind/
 ├── frontend/          # 前端项目
 │   ├── src/
 │   │   ├── api/       # API接口
