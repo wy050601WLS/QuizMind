@@ -1,0 +1,175 @@
+# AI智能刷题学习助手
+
+## 项目简介
+面向学生群体的AI智能刷题学习工具，围绕"出题-刷题-纠错-巩固"的学习闭环，结合大模型AI能力实现灵活出题、智能解析、个性化学习建议。
+
+## 技术栈
+- **前端**：Vue 3 + Vite + Element Plus + ECharts
+- **后端**：Python FastAPI
+- **数据库**：SQLite
+- **AI能力**：豆包大模型API / 通义千问API
+
+## 项目结构
+
+```
+个人项目/
+├── frontend/          # 前端项目
+│   ├── src/
+│   │   ├── api/       # API接口
+│   │   ├── components/# 组件
+│   │   ├── router/    # 路由
+│   │   ├── stores/    # 状态管理
+│   │   ├── utils/     # 工具类
+│   │   └── views/     # 页面
+│   └── package.json
+├── backend/           # 后端项目
+│   ├── app/
+│   │   ├── models/    # 数据模型
+│   │   ├── routers/   # 路由
+│   │   ├── schemas/   # 数据模式
+│   │   ├── services/  # 服务
+│   │   └── utils/     # 工具类
+│   ├── init_db.py     # 数据库初始化
+│   ├── run.py         # 启动脚本
+│   └── requirements.txt
+├── 任务文档.md
+├── 项目.md
+└── 数据库设计文档.md
+```
+
+## 快速开始
+
+### 1. 启动后端
+
+```bash
+# 进入后端目录
+cd backend
+
+# 创建虚拟环境（可选）
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 初始化数据库
+python init_db.py
+
+# 启动后端服务
+python run.py
+```
+
+后端服务将在 http://localhost:8000 启动
+
+### 2. 启动前端
+
+```bash
+# 进入前端目录
+cd frontend
+
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+```
+
+前端服务将在 http://localhost:3000 启动
+
+### 3. 访问应用
+
+打开浏览器访问 http://localhost:3000
+
+## 功能模块
+
+### 已完成功能
+- ✅ 前端项目骨架搭建
+- ✅ 后端项目骨架搭建
+- ✅ 数据库设计与初始化
+- ✅ 前端基础页面框架
+- ✅ 前后端联调验证
+
+### 待开发功能
+- 🔄 题库管理功能
+- 🔄 刷题练习功能
+- 🔄 错题本功能
+- 🔄 学习统计功能
+- 🔄 AI能力集成
+
+## API接口
+
+### 健康检查
+- `GET /api/health` - 检查服务状态
+
+### 题目管理
+- `GET /api/questions` - 获取题目列表
+- `GET /api/questions/{id}` - 获取题目详情
+- `POST /api/questions` - 创建题目
+- `PUT /api/questions/{id}` - 更新题目
+- `DELETE /api/questions/{id}` - 删除题目
+
+### 分类管理
+- `GET /api/categories` - 获取分类列表
+- `POST /api/categories` - 创建分类
+
+### 知识点管理
+- `GET /api/knowledge-points` - 获取知识点列表
+- `POST /api/knowledge-points` - 创建知识点
+
+### 练习记录
+- `POST /api/practice/submit` - 提交答案
+- `GET /api/practice/records` - 获取练习记录
+- `GET /api/practice/statistics` - 获取练习统计
+- `GET /api/practice/daily-stats` - 获取每日统计
+
+### 错题管理
+- `GET /api/wrong-questions` - 获取错题列表
+- `PUT /api/wrong-questions/{id}/mark` - 标记错题
+- `DELETE /api/wrong-questions/{id}` - 删除错题
+- `POST /api/wrong-questions/batch-delete` - 批量删除错题
+- `GET /api/wrong-questions/statistics` - 获取错题统计
+
+## 开发规范
+
+### 代码规范
+- 前端：遵循Vue 3官方风格指南
+- 后端：遵循PEP 8 Python代码规范
+- 注释：核心类、函数、接口配备完整注释
+
+### 提交规范
+- feat: 新功能
+- fix: 修复bug
+- docs: 文档更新
+- style: 代码格式调整
+- refactor: 重构
+- test: 测试相关
+- chore: 构建/工具相关
+
+## 常见问题
+
+### 1. 后端启动失败
+- 检查Python版本（推荐3.8+）
+- 检查依赖是否安装完整
+- 检查端口8000是否被占用
+
+### 2. 前端启动失败
+- 检查Node.js版本（推荐16+）
+- 检查依赖是否安装完整
+- 检查端口3000是否被占用
+
+### 3. 前后端无法通信
+- 确保后端服务已启动
+- 检查CORS配置
+- 检查API地址配置
+
+## 更新日志
+
+### 2026-06-22
+- 完成项目初始化
+- 搭建前后端骨架
+- 实现基础页面框架
+- 完成数据库设计
+
+---
+*项目文档 - 2026年6月22日*
