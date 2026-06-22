@@ -104,3 +104,42 @@ export function deleteWrongQuestion(id) {
     method: 'delete'
   })
 }
+
+// AI相关接口
+export function aiHealthCheck() {
+  return request({
+    url: '/ai/health',
+    method: 'get'
+  })
+}
+
+export function aiGenerateQuestion(data) {
+  return request({
+    url: '/ai/generate-question',
+    method: 'post',
+    data
+  })
+}
+
+export function aiAnalyzeWrongQuestion(data) {
+  return request({
+    url: '/ai/analyze-wrong-question',
+    method: 'post',
+    data
+  })
+}
+
+export function aiGenerateSuggestions() {
+  return request({
+    url: '/ai/generate-suggestions',
+    method: 'post'
+  })
+}
+
+export function aiGenerateExam(data) {
+  return request({
+    url: '/ai/generate-exam',
+    method: 'post',
+    data
+  })
+}

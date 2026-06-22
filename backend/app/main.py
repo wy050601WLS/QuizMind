@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .routers import questions, practice, wrong_questions
+from .routers import questions, practice, wrong_questions, ai
 import logging
 
 logging.basicConfig(
@@ -29,6 +29,7 @@ app.add_middleware(
 app.include_router(questions.router)
 app.include_router(practice.router)
 app.include_router(wrong_questions.router)
+app.include_router(ai.router)
 
 @app.get("/")
 async def root():
