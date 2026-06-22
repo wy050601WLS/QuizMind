@@ -9,7 +9,7 @@
               <el-icon><Refresh /></el-icon>
               错题重做
             </el-button>
-            <el-button type="danger" @click="handleBatchDelete">
+            <el-button type="danger" @click="handleBatchDelete" :disabled="selectedRows.length === 0">
               <el-icon><Delete /></el-icon>
               批量删除
             </el-button>
@@ -21,16 +21,22 @@
         <el-form :inline="true" :model="filterForm">
           <el-form-item label="科目">
             <el-select v-model="filterForm.subject" placeholder="选择科目" clearable>
-              <el-option label="数学" value="math" />
-              <el-option label="英语" value="english" />
-              <el-option label="物理" value="physics" />
+              <el-option
+                v-for="cat in categories"
+                :key="cat.id"
+                :label="cat.name"
+                :value="cat.name"
+              />
             </el-select>
           </el-form-item>
           <el-form-item label="知识点">
-            <el-select v-model="filterForm.knowledgePoint" placeholder="选择知识点" clearable>
-              <el-option label="集合" value="set" />
-              <el-option label="函数" value="function" />
-              <el-option label="三角函数" value="trigonometric" />
+            <el-select v-model="filterForm.knowledge_point_id" placeholder="选择知识点" clearable>
+              <el-option
+                v-for="kp in knowledgePoints"
+                :key="kp.id"
+                :label="kp.name"
+                :value="kp.id"
+              />
             </el-select>
           </el-form-item>
           <el-form-item>
@@ -48,21 +54,44 @@
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="subject" label="科目" width="100" />
-        <el-table-column prop="knowledgePoint" label="知识点" width="120" />
-        <el-table-column prop="content" label="题目内容" show-overflow-tooltip />
-        <el-table-column prop="myAnswer" label="我的答案" width="100" />
-        <el-table-column prop="correctAnswer" label="正确答案" width="100" />
-        <el-table-column prop="errorCount" label="错误次数" width="100">
+        <el-table-column label="科目" width="100">
           <template #default="{ row }">
-            <el-tag type="danger">{{ row.errorCount }}次</el-tag>
+            {{ getCategoryName(row.question?.category_id) }}
           </template>
         </el-table-column>
-        <el-table-column prop="lastErrorTime" label="最近错误时间" width="150" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="知识点" width="120">
+          <template #default="{ row }">
+            {{ getKnowledgePointName(row.question?.knowledge_point_id) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="题目内容" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.question?.content || '未知题目' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="my_answer" label="我的答案" width="100" />
+        <el-table-column label="正确答案" width="100">
+          <template #default="{ row }">
+            {{ row.question?.answer || '未知' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="error_count" label="错误次数" width="100">
+          <template #default="{ row }">
+            <el-tag type="danger">{{ row.error_count }}次</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="最近错误时间" width="150">
+          <template #default="{ row }">
+            {{ formatTime(row.last_error_time) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleReviewOne(row)">重做</el-button>
             <el-button size="small" @click="handleViewAnalysis(row)">查看解析</el-button>
+            <el-button size="small" @click="handleMark(row)">
+              {{ row.is_marked ? '取消标记' : '标记' }}
+            </el-button>
             <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -82,91 +111,132 @@
     </el-card>
 
     <el-dialog v-model="analysisVisible" title="题目解析" width="600px">
-      <div class="analysis-content" v-if="currentQuestion">
+      <div class="analysis-content" v-if="currentWrongQuestion">
         <h4>题目内容</h4>
-        <p>{{ currentQuestion.content }}</p>
+        <p>{{ currentWrongQuestion.question?.content }}</p>
+        
+        <h4>我的答案</h4>
+        <p :class="{ 'error-answer': !isAnswerCorrect }">{{ currentWrongQuestion.my_answer }}</p>
         
         <h4>正确答案</h4>
-        <p>{{ currentQuestion.correctAnswer }}</p>
+        <p class="correct-answer">{{ currentWrongQuestion.question?.answer }}</p>
         
         <h4>解析</h4>
-        <p>{{ currentQuestion.analysis }}</p>
+        <p>{{ currentWrongQuestion.question?.explanation || '暂无解析' }}</p>
         
         <h4>知识点</h4>
-        <el-tag>{{ currentQuestion.knowledgePoint }}</el-tag>
+        <el-tag>{{ getKnowledgePointName(currentWrongQuestion.question?.knowledge_point_id) }}</el-tag>
       </div>
       <template #footer>
         <el-button @click="analysisVisible = false">关闭</el-button>
-        <el-button type="primary" @click="handleReviewOne(currentQuestion)">重做此题</el-button>
+        <el-button type="primary" @click="handleReviewOne(currentWrongQuestion)">重做此题</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { Refresh, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
+import {
+  getWrongQuestions,
+  markWrongQuestion,
+  deleteWrongQuestion,
+  getCategories,
+  getKnowledgePoints
+} from '../api'
 
+const router = useRouter()
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(50)
+const total = ref(0)
 const analysisVisible = ref(false)
-const currentQuestion = ref(null)
+const currentWrongQuestion = ref(null)
 const selectedRows = ref([])
 
 const filterForm = reactive({
   subject: '',
-  knowledgePoint: ''
+  knowledge_point_id: null
 })
 
-const wrongQuestions = ref([
-  {
-    id: 1,
-    subject: '数学',
-    knowledgePoint: '集合',
-    content: '已知集合A={1,2,3}，B={2,3,4}，则A∩B=',
-    myAnswer: 'A',
-    correctAnswer: 'B',
-    errorCount: 3,
-    lastErrorTime: '2026-06-22 14:30',
-    analysis: '交集是两个集合共有的元素组成的集合，A和B共有的元素是2和3，所以A∩B={2,3}。'
-  },
-  {
-    id: 2,
-    subject: '数学',
-    knowledgePoint: '函数',
-    content: '函数f(x)=x²-2x+1的最小值为',
-    myAnswer: 'C',
-    correctAnswer: 'B',
-    errorCount: 2,
-    lastErrorTime: '2026-06-21 10:15',
-    analysis: 'f(x)=(x-1)²≥0，当x=1时取最小值0。这是一个完全平方式，最小值为0。'
-  },
-  {
-    id: 3,
-    subject: '英语',
-    knowledgePoint: '时态',
-    content: 'I ___ to school by bus every day.',
-    myAnswer: 'go',
-    correctAnswer: 'go',
-    errorCount: 1,
-    lastErrorTime: '2026-06-20 16:45',
-    analysis: 'every day表示经常性动作，用一般现在时。主语是I，动词用原形go。'
+const wrongQuestions = ref([])
+const categories = ref([])
+const knowledgePoints = ref([])
+
+const isAnswerCorrect = ref(false)
+
+const getCategoryName = (categoryId) => {
+  const cat = categories.value.find(c => c.id === categoryId)
+  return cat ? cat.name : '未知'
+}
+
+const getKnowledgePointName = (kpId) => {
+  const kp = knowledgePoints.value.find(k => k.id === kpId)
+  return kp ? kp.name : '未知'
+}
+
+const formatTime = (time) => {
+  if (!time) return ''
+  const date = new Date(time)
+  return date.toLocaleString('zh-CN')
+}
+
+const fetchWrongQuestions = async () => {
+  loading.value = true
+  try {
+    const params = {
+      page: currentPage.value,
+      page_size: pageSize.value
+    }
+    if (filterForm.subject) {
+      const cat = categories.value.find(c => c.name === filterForm.subject)
+      if (cat) params.subject = cat.name
+    }
+    if (filterForm.knowledge_point_id) {
+      params.knowledge_point_id = filterForm.knowledge_point_id
+    }
+
+    const res = await getWrongQuestions(params)
+    wrongQuestions.value = res.data.wrong_questions || []
+    total.value = res.total || 0
+  } catch (error) {
+    console.error('获取错题列表失败:', error)
+    ElMessage.error('获取错题列表失败')
+  } finally {
+    loading.value = false
   }
-])
+}
+
+const fetchCategories = async () => {
+  try {
+    const res = await getCategories()
+    categories.value = res || []
+  } catch (error) {
+    console.error('获取分类失败:', error)
+  }
+}
+
+const fetchKnowledgePoints = async () => {
+  try {
+    const res = await getKnowledgePoints()
+    knowledgePoints.value = res || []
+  } catch (error) {
+    console.error('获取知识点失败:', error)
+  }
+}
 
 const handleSearch = () => {
-  loading.value = true
-  setTimeout(() => {
-    loading.value = false
-  }, 500)
+  currentPage.value = 1
+  fetchWrongQuestions()
 }
 
 const handleReset = () => {
   filterForm.subject = ''
-  filterForm.knowledgePoint = ''
+  filterForm.knowledge_point_id = null
+  handleSearch()
 }
 
 const handleSelectionChange = (val) => {
@@ -174,16 +244,36 @@ const handleSelectionChange = (val) => {
 }
 
 const handleReview = () => {
-  ElMessage.info('错题重做功能（待实现）')
+  if (wrongQuestions.value.length === 0) {
+    ElMessage.info('暂无错题需要重做')
+    return
+  }
+  router.push('/practice')
 }
 
 const handleReviewOne = (row) => {
-  ElMessage.info(`重做题目：${row.id}`)
+  if (row && row.question_id) {
+    router.push({
+      path: '/practice',
+      query: { question_id: row.question_id }
+    })
+  }
 }
 
 const handleViewAnalysis = (row) => {
-  currentQuestion.value = row
+  currentWrongQuestion.value = row
+  isAnswerCorrect.value = row.my_answer === row.question?.answer
   analysisVisible.value = true
+}
+
+const handleMark = async (row) => {
+  try {
+    await markWrongQuestion(row.id)
+    ElMessage.success(row.is_marked ? '已取消标记' : '已标记')
+    fetchWrongQuestions()
+  } catch (error) {
+    ElMessage.error('操作失败')
+  }
 }
 
 const handleDelete = (row) => {
@@ -191,8 +281,14 @@ const handleDelete = (row) => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    ElMessage.success('删除成功')
+  }).then(async () => {
+    try {
+      await deleteWrongQuestion(row.id)
+      ElMessage.success('删除成功')
+      fetchWrongQuestions()
+    } catch (error) {
+      ElMessage.error('删除失败')
+    }
   }).catch(() => {})
 }
 
@@ -205,18 +301,34 @@ const handleBatchDelete = () => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    ElMessage.success('批量删除成功')
+  }).then(async () => {
+    try {
+      for (const row of selectedRows.value) {
+        await deleteWrongQuestion(row.id)
+      }
+      ElMessage.success('批量删除成功')
+      fetchWrongQuestions()
+    } catch (error) {
+      ElMessage.error('批量删除失败')
+    }
   }).catch(() => {})
 }
 
 const handleSizeChange = (val) => {
   pageSize.value = val
+  fetchWrongQuestions()
 }
 
 const handleCurrentChange = (val) => {
   currentPage.value = val
+  fetchWrongQuestions()
 }
+
+onMounted(() => {
+  fetchCategories()
+  fetchKnowledgePoints()
+  fetchWrongQuestions()
+})
 </script>
 
 <style scoped>
@@ -253,5 +365,15 @@ const handleCurrentChange = (val) => {
 .analysis-content p {
   line-height: 1.8;
   color: #606266;
+}
+
+.error-answer {
+  color: #f56c6c;
+  font-weight: bold;
+}
+
+.correct-answer {
+  color: #67c23a;
+  font-weight: bold;
 }
 </style>
