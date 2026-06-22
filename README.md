@@ -8,6 +8,7 @@
 - **后端**：Python FastAPI
 - **数据库**：SQLite
 - **AI能力**：豆包大模型API / 通义千问API
+- **容器化**：Docker + Docker Compose
 
 ## 项目结构
 
@@ -21,6 +22,7 @@ QuizMind/
 │   │   ├── stores/    # 状态管理
 │   │   ├── utils/     # 工具类
 │   │   └── views/     # 页面
+│   ├── Dockerfile
 │   └── package.json
 ├── backend/           # 后端项目
 │   ├── app/
@@ -31,15 +33,20 @@ QuizMind/
 │   │   └── utils/     # 工具类
 │   ├── init_db.py     # 数据库初始化
 │   ├── run.py         # 启动脚本
+│   ├── Dockerfile
 │   └── requirements.txt
+├── docker-compose.yml # Docker编排配置
 ├── 任务文档.md
 ├── 项目.md
+├── 项目历程文档.md
 └── 数据库设计文档.md
 ```
 
 ## 快速开始
 
-### 1. 启动后端
+### 方式一：本地开发
+
+#### 1. 启动后端
 
 ```bash
 # 进入后端目录
@@ -62,7 +69,7 @@ python run.py
 
 后端服务将在 http://localhost:8000 启动
 
-### 2. 启动前端
+#### 2. 启动前端
 
 ```bash
 # 进入前端目录
@@ -77,9 +84,24 @@ npm run dev
 
 前端服务将在 http://localhost:3000 启动
 
-### 3. 访问应用
+#### 3. 访问应用
 
 打开浏览器访问 http://localhost:3000
+
+### 方式二：Docker部署
+
+```bash
+# 构建并启动所有服务
+docker-compose up -d
+
+# 查看运行状态
+docker-compose ps
+
+# 停止服务
+docker-compose down
+```
+
+访问 http://localhost:3000 即可使用
 
 ## 功能模块
 
@@ -89,13 +111,19 @@ npm run dev
 - ✅ 数据库设计与初始化
 - ✅ 前端基础页面框架
 - ✅ 前后端联调验证
+- ✅ 题库管理功能（CRUD、筛选、分页）
+- ✅ 刷题练习功能（多种题型、进度跟踪）
+- ✅ 错题本功能（错题管理、标记、查看解析）
+- ✅ 学习统计功能（数据可视化、趋势图）
+- ✅ AI智能出题功能
+- ✅ 错题AI解析功能
+- ✅ 薄弱点总结功能
+- ✅ AI模拟组卷功能
+- ✅ Docker容器化部署
 
 ### 待开发功能
-- 🔄 题库管理功能
-- 🔄 刷题练习功能
-- 🔄 错题本功能
-- 🔄 学习统计功能
-- 🔄 AI能力集成
+- 🔄 多用户支持
+- 🔄 更多AI模型支持
 
 ## API接口
 
@@ -130,6 +158,43 @@ npm run dev
 - `POST /api/wrong-questions/batch-delete` - 批量删除错题
 - `GET /api/wrong-questions/statistics` - 获取错题统计
 
+### AI功能
+- `GET /api/ai/health` - 检查AI服务状态
+- `POST /api/ai/generate-question` - AI生成题目
+- `POST /api/ai/analyze-wrong-question` - AI分析错题
+- `POST /api/ai/generate-suggestions` - AI生成学习建议
+- `POST /api/ai/generate-exam` - AI生成模拟试卷
+
+## 环境变量配置
+
+### 后端环境变量
+创建 `backend/.env` 文件：
+
+```env
+# 数据库配置
+DATABASE_URL=sqlite:///./ai_study.db
+
+# AI服务配置
+AI_PROVIDER=mock  # 可选: mock, doubao, qwen
+
+# 豆包大模型配置
+DOUBAO_API_KEY=your_api_key
+DOUBAO_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+DOUBAO_MODEL=doubao-pro-32k
+
+# 通义千问配置
+QWEN_API_KEY=your_api_key
+QWEN_BASE_URL=https://dashscope.aliyuncs.com/api/v1
+QWEN_MODEL=qwen-turbo
+```
+
+### 前端环境变量
+创建 `frontend/.env.development` 文件：
+
+```env
+VITE_API_BASE_URL=http://localhost:8000/api
+```
+
 ## 开发规范
 
 ### 代码规范
@@ -163,6 +228,11 @@ npm run dev
 - 检查CORS配置
 - 检查API地址配置
 
+### 4. Docker部署问题
+- 确保Docker已安装
+- 检查端口是否被占用
+- 查看日志：`docker-compose logs`
+
 ## 更新日志
 
 ### 2026-06-22
@@ -170,6 +240,9 @@ npm run dev
 - 搭建前后端骨架
 - 实现基础页面框架
 - 完成数据库设计
+- 实现核心业务功能
+- 集成AI能力
+- 添加Docker容器化部署
 
 ---
 *项目文档 - 2026年6月22日*
