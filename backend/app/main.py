@@ -1,8 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from .database import engine, Base
 from .routers import questions, practice, wrong_questions, ai
 import logging
+import traceback
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,10 +42,25 @@ async def health_check():
     return {"status": "healthy", "message": "服务运行正常"}
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    logger.error(f"全局异常: {exc}")
-    return {
-        "code": 500,
-        "message": "服务器内部错误",
-        "data": None
-    }
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"全局异常: {exc}\n{traceback.format_exc()}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "code": 500,
+            "message": "服务器内部错误",
+            "data": None
+        }
+    )
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    logger.warning(f"参数错误: {exc}")
+    return JSONResponse(
+        status_code=400,
+        content={
+            "code": 400,
+            "message": str(exc),
+            "data": None
+        }
+    )
