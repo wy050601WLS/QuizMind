@@ -47,6 +47,12 @@ const routes = [
         name: 'AiQuestion',
         component: () => import('../views/AiQuestion.vue'),
         meta: { title: 'AI智能出题' }
+      },
+      {
+        path: 'weak-points',
+        name: 'WeakPoints',
+        component: () => import('../views/WeakPoints.vue'),
+        meta: { title: '薄弱点分析' }
       }
     ]
   }

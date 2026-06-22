@@ -41,6 +41,10 @@
             <el-icon><MagicStick /></el-icon>
             <span>AI智能出题</span>
           </el-menu-item>
+          <el-menu-item index="/weak-points">
+            <el-icon><TrendCharts /></el-icon>
+            <span>薄弱点分析</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-container>
@@ -85,7 +89,8 @@ import {
   DataAnalysis,
   ArrowDown,
   Connection,
-  MagicStick
+  MagicStick,
+  TrendCharts
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
