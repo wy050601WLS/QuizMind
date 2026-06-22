@@ -45,6 +45,10 @@
             <el-icon><TrendCharts /></el-icon>
             <span>薄弱点分析</span>
           </el-menu-item>
+          <el-menu-item index="/exam-paper">
+            <el-icon><Document /></el-icon>
+            <span>AI模拟组卷</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-container>

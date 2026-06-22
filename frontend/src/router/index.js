@@ -53,6 +53,12 @@ const routes = [
         name: 'WeakPoints',
         component: () => import('../views/WeakPoints.vue'),
         meta: { title: '薄弱点分析' }
+      },
+      {
+        path: 'exam-paper',
+        name: 'ExamPaper',
+        component: () => import('../views/ExamPaper.vue'),
+        meta: { title: 'AI模拟组卷' }
       }
     ]
   }
