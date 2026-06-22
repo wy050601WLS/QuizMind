@@ -37,7 +37,7 @@ def get_questions(
     questions = query.offset((page - 1) * page_size).limit(page_size).all()
     
     return PaginatedResponse(
-        data={"questions": [q.__dict__ for q in questions]},
+        data={"questions": [{k: v for k, v in q.__dict__.items() if not k.startswith('_')} for q in questions]},
         total=total,
         page=page,
         page_size=page_size

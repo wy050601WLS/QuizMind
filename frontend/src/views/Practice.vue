@@ -202,7 +202,7 @@ const categories = ref([])
 const knowledgePoints = ref([])
 const questions = ref([])
 const currentIndex = ref(0)
-const userAnswer = ref('')
+const userAnswer = ref(null)
 const showResult = ref(false)
 const isCorrect = ref(false)
 const correctCount = ref(0)
@@ -392,17 +392,21 @@ const nextQuestion = () => {
 const resetQuestionState = () => {
   if (answeredQuestions.value.has(currentIndex.value)) {
     showResult.value = true
-    userAnswer.value = ''
+  } else {
+    showResult.value = false
+  }
+  // 根据题型设置 userAnswer 的类型
+  if (currentQuestion.value?.question_type === 'multiple') {
+    userAnswer.value = []
   } else {
     userAnswer.value = ''
-    showResult.value = false
   }
 }
 
 const resetPractice = () => {
   questions.value = []
   currentIndex.value = 0
-  userAnswer.value = ''
+  userAnswer.value = null
   showResult.value = false
   correctCount.value = 0
   answeredQuestions.value = new Set()

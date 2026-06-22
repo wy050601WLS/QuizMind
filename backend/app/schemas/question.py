@@ -85,7 +85,6 @@ class WrongQuestionResponse(WrongQuestionBase):
 class PracticeRecordBase(BaseModel):
     question_id: int
     my_answer: Optional[str] = None
-    is_correct: int
     duration: Optional[int] = None
 
 class PracticeRecordCreate(PracticeRecordBase):

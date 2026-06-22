@@ -177,6 +177,7 @@ import {
   getWrongQuestions,
   markWrongQuestion,
   deleteWrongQuestion,
+  batchDeleteWrongQuestions,
   getCategories,
   getKnowledgePoints,
   aiAnalyzeWrongQuestion
@@ -361,9 +362,8 @@ const handleBatchDelete = () => {
     type: 'warning'
   }).then(async () => {
     try {
-      for (const row of selectedRows.value) {
-        await deleteWrongQuestion(row.id)
-      }
+      const ids = selectedRows.value.map(row => row.id)
+      await batchDeleteWrongQuestions(ids)
       ElMessage.success('批量删除成功')
       fetchWrongQuestions()
     } catch (error) {

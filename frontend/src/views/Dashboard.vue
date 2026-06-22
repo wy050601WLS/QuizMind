@@ -172,6 +172,8 @@ import { Document, Edit, Warning, TrendCharts } from '@element-plus/icons-vue'
 import {
   getQuestions,
   getPracticeStatistics,
+  getPracticeRecords,
+  getDailyStats,
   getWrongQuestions,
   getCategories,
   getKnowledgePoints
@@ -250,7 +252,7 @@ const fetchWrongCount = async () => {
 
 const fetchDailyStats = async () => {
   try {
-    const res = await getPracticeStatistics({ days: 7 })
+    const res = await getDailyStats({ days: 7 })
     if (res && res.data) {
       dailyStats.value = res.data.daily_stats || []
     }
@@ -276,9 +278,9 @@ const fetchKnowledgeStats = async () => {
 const fetchRecentPractice = async () => {
   loading.value = true
   try {
-    const res = await getWrongQuestions({ page: 1, page_size: 5 })
+    const res = await getPracticeRecords({ page: 1, page_size: 5 })
     if (res && res.data) {
-      recentPractice.value = res.data.wrong_questions || []
+      recentPractice.value = res.data.records || []
     }
   } catch (error) {
     console.error('获取最近练习失败:', error)

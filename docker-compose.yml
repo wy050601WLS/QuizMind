@@ -8,8 +8,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./ai_study.db
+      - DATABASE_URL=sqlite:////app/data/ai_study.db
       - AI_PROVIDER=mock
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      # - DOUBAO_API_KEY=your_api_key
+      # - QWEN_API_KEY=your_api_key
     volumes:
       - ./backend/data:/app/data
     restart: unless-stopped

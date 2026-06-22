@@ -65,7 +65,7 @@ def get_practice_records(
     return {
         "code": 200,
         "message": "success",
-        "data": {"records": [r.__dict__ for r in records]},
+        "data": {"records": [{k: v for k, v in r.__dict__.items() if not k.startswith('_')} for r in records]},
         "total": total,
         "page": page,
         "page_size": page_size

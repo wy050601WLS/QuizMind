@@ -5,6 +5,7 @@ from .database import engine, Base
 from .routers import questions, practice, wrong_questions, ai
 import logging
 import traceback
+import os
 
 logging.basicConfig(
     level=logging.INFO,
@@ -20,9 +21,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# CORS 配置，支持环境变量
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,18 +45,7 @@ async def root():
 async def health_check():
     return {"status": "healthy", "message": "服务运行正常"}
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"全局异常: {exc}\n{traceback.format_exc()}")
-    return JSONResponse(
-        status_code=500,
-        content={
-            "code": 500,
-            "message": "服务器内部错误",
-            "data": None
-        }
-    )
-
+# ValueError 异常处理器（放在 Exception 之前）
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError):
     logger.warning(f"参数错误: {exc}")
@@ -61,6 +54,19 @@ async def value_error_handler(request: Request, exc: ValueError):
         content={
             "code": 400,
             "message": str(exc),
+            "data": None
+        }
+    )
+
+# 全局异常处理器
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"全局异常: {exc}\n{traceback.format_exc()}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "code": 500,
+            "message": "服务器内部错误",
             "data": None
         }
     )

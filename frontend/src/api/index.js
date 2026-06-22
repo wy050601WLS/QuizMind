@@ -83,6 +83,14 @@ export function getPracticeStatistics(params) {
   })
 }
 
+export function getDailyStats(params) {
+  return request({
+    url: '/practice/daily-stats',
+    method: 'get',
+    params
+  })
+}
+
 export function getWrongQuestions(params) {
   return request({
     url: '/wrong-questions',
@@ -102,6 +110,14 @@ export function deleteWrongQuestion(id) {
   return request({
     url: `/wrong-questions/${id}`,
     method: 'delete'
+  })
+}
+
+export function batchDeleteWrongQuestions(ids) {
+  return request({
+    url: '/wrong-questions/batch-delete',
+    method: 'post',
+    data: ids
   })
 }
 

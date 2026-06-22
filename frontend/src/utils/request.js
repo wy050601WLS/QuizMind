@@ -27,7 +27,8 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   response => {
     const res = response.data
-    if (res.code !== 200) {
+    // 兼容两种返回格式：有code字段的和直接返回数据的
+    if (res && res.code !== undefined && res.code !== 200) {
       ElMessage.error(res.message || '请求失败')
       return Promise.reject(new Error(res.message || '请求失败'))
     }

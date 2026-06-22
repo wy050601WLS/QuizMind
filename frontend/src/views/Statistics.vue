@@ -174,6 +174,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { Document, CircleCheck, Timer, Warning, TrendCharts, DataAnalysis } from '@element-plus/icons-vue'
 import {
   getPracticeStatistics,
+  getDailyStats,
   getWrongQuestions,
   getCategories,
   getKnowledgePoints,
@@ -247,7 +248,7 @@ const fetchWrongStats = async () => {
 
 const fetchDailyStats = async () => {
   try {
-    const res = await getPracticeStatistics({ days: 7 })
+    const res = await getDailyStats({ days: 7 })
     if (res && res.data) {
       dailyStats.value = res.data.daily_stats || []
     }
